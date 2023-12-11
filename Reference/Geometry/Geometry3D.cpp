@@ -144,6 +144,20 @@ point coords(const point3 & p, const point3 & q, const point3 & r, const point3 
     return {(t - o).dot(dx), (t - o).dot(dy)};
 }
 
+// lim = 5000, p = 0.1 & pass = 0.995 works okey
+pair<point3, ld> miniumSphereEnclosing(vector<point3> P, const point3 & init, const int & lim, const & ld p, const ld & pass){
+    int n = P.size();
+    ld ans = INF;
+    for(int i = 0; i < lim; i++){
+        point3 res = P[0];
+        for(int j = 1; j < n; j++) if((res - init).length() < (P[j] - init).length()) res = P[j];
+        ans = min(ans, (res - init).length());
+        init += (res - init) * p;
+        p *= pass;
+    }
+    return {init, ans};
+}
+
 ld areaFace(vector<point3> P){
     int n = P.size();
     point3 ans;
