@@ -14,7 +14,6 @@ using namespace std;
 #define se second
 #define pb push_back
 #define all(v) v.begin(), v.end()
-#define sz(v) (int)v.size()
 
 const ld eps = 0, inf = numeric_limits<ld>::max();
 bool geq(ld a, ld b){return a-b >= -eps;}     //a >= b
@@ -23,10 +22,6 @@ bool ge(ld a, ld b){return a-b > eps;}        //a > b
 bool le(ld a, ld b){return b-a > eps;}        //a < b
 bool eq(ld a, ld b){return abs(a-b) <= eps;}  //a == b
 bool neq(ld a, ld b){return abs(a-b) > eps;}  //a != b
-
-const ll mod = 1e9+7;
-const dl pi = acos(-1.0);
-const ld ep = 1e-9;
 
 int BIT[401] = {};
 
