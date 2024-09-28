@@ -128,21 +128,42 @@ point3 closestPointLs(const line & l1, const line & l2){
     return l1.p + l1.q * (l2.p - l1.p).dot(n) / (l1.q).dot(n);
 }
 
-//If you have 3 points the flag will be true but you have 4 points it will be false
-point coords(const point3 & p, const point3 & q, const point3 & r, const point3 & s, const point3 & t, const bool & flag){
-    point3 o = p, dx, dy, dz;
-    if(flag){
+bool point3InLine(const point3 & a, const point3 & v, const point3 & p){
+	return eq(line(a, v).dist(p), 0);
+}
+
+bool point3InSegment(const point3 & a, const point3 & b, const point3 & p){
+    if(p == a || p == b) return 1;
+	return point3InLine(a, b - a, p) && p >= min(a, b) && p <= max(a, b);
+}
+
+int intersectSegmentPlaneInfo(const point3 & a, const point3 & b, const plane & p){
+    //if(leq(p.dist(a), 0) && leq(p.dist(b), 0)) return -1;
+    point3 d = b - a;
+    if(eq(d.dot(p.n), 0)){
+        if(eq(p.dist(a), 0)) return -1;
+        else return 0;
+    }else{
+        if(point3InSegment(a, b, line(a, b - a).inter(p))) return 1;
+    }
+    return 0;
+}
+
+struct coords{
+    point3 o, dx, dy, dz;
+
+    coords(point3 p, point3 q, point3 r) : o(p) {
         dx = (q - p).unit();
         dz = ((dx).cross(r - p)).unit();
-        dy = (dz).cross(dx);
-    }else{
-        dx = q - p;
-        dy = r - p;
-        dz = s - p;
+        dy = dz.cross(dx);
     }
+
+    coords(point3 p, point3 q, point3 r, point3 s) : 
+     o(p), dx(q - p), dy(r - p), dz(s - p) {}
     //Return a point in 2D
-    return {(t - o).dot(dx), (t - o).dot(dy)};
-}
+    point pos2d(point3 p) {return point((p - o).dot(dx), (p - o).dot(dy));}
+    point3 pos3d(point3 p) {return point3((p - o).dot(dx), (p - o).dot(dy), (p - o).dot(dz));}
+};
 
 // lim = 5000, p = 0.1 & pass = 0.995 works okey
 pair<point3, ld> miniumSphereEnclosing(vector<point3> P, const point3 & init, const int & lim, const & ld p, const ld & pass){
@@ -179,6 +200,52 @@ ld volume(vector<vector<point3>> P){
         ans += (P[i][0]).dot(res);
     }
     return abs(ans) / 6.0;
+}
+
+void reorient(vector<vector<point3>> & P){
+    int n = P.size();
+    vector<vector<pair<int, bool>>> g(n);
+    map<pair<point3, point3>, int> es;
+    for(int i = 0; i < n; i++){
+        int m = P[i].size();
+        for(int j = 0; j < m; j++){
+            int l = j + 1; if(l == m) l = 0;
+            point3 a = P[i][j], b = P[i][l];
+            if(es.find({a, b}) != es.end()){
+                int v = es[{a, b}];
+                g[i].pb({v, true});
+                g[v].pb({i, true});
+            }else if(es.find({b, a}) != es.end()){
+                int v = es[{b, a}];
+                g[i].pb({v, false});
+                g[v].pb({i, false});
+            }else es[{a, b}] = i;
+        }
+    }
+    vector<bool> vis(n, false), flip(n, false);
+    queue<int> q;
+    q.push(0);
+    while(!q.empty()){
+        int u = q.front();
+        q.pop();
+        vis[u] = true;
+        for(auto e : g[u]){
+            if(!vis[e.fi]){
+                vis[e.fi] = true;
+                flip[e.fi] = (flip[u] ^ e.se);
+                q.push(e.fi);
+            }
+        }
+    }
+    for(int i = 0; i < n; i++){
+        if(flip[i]) reverse(all(P[i]));
+    }
+    return;
+}
+
+plane divSpace(point3 a, point3 b){
+    point3 m = (a + b) / 2;
+    return plane(a - b, m);
 }
 
 //Runs in O(n^4), too slow, easy implementation
