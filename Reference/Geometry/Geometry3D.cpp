@@ -358,8 +358,6 @@ vector<point3> createConvexFace(vector<point3> P){
 
 vector<vector<point3>> cutConvexPolyhedro(vector<vector<point3>> & P, plane p){
     int n = P.size();
-    //if(sidePolyhedroPlane(P, p) > 0) return P;
-    if(n < 4) return {};
     vector<vector<point3>> ans;
     vector<point3> at;
     for(int i = 0; i < n; i++){
