@@ -304,6 +304,91 @@ vector<vector<point3>> convexHull2n(vector<point3> P){
     return ans;
 }
 
+int vls(bool a, bool b){
+    if(a && b) return 0; // Intersection
+    if(!a && !b) return 2; // Inside
+    if(a) return 1; // Above
+    return -1; // Below
+}
+
+int sidePolyhedroPlane(vector<vector<point3>> P, plane p){
+    int n = P.size(); bool sup = false, infr = false;
+    for(int i = 0; i < n; i++){
+        for(int l = 0; l < P[i].size(); l++){
+            auto u = p.side(P[i][l]);
+            if(ge(u, 0)) sup = true;
+            if(le(u, 0)) infr = true;
+        }
+    }
+    return vls(sup, infr);
+}
+
+int sideFacePlane(vector<point3> F, plane p){
+    int n = F.size(); bool sup = false, infr = false;
+    for(int i = 0; i < n; i++){
+        auto u = p.side(F[i]);
+        if(ge(u, 0)) sup = true;
+        if(le(u, 0)) infr = true;
+    }
+    return vls(sup, infr);
+}
+
+vector<point3> createConvexFace(vector<point3> P){
+    int n = P.size();
+    if(n <= 2) return {};
+    sort(all(P)); P.erase(unique(all(P)), P.end());
+    n = P.size();
+    if(n <= 2) return {};
+    vector<pair<point, int>> aux;
+    int j = 0;
+    while((P[1] - P[0]).cross(P[j] - P[0]) == zero && j < n) j++;
+    if(j == n) return {};
+    coords base(P[0], P[1], P[j]);
+    for(int i = 0; i < n; i++){
+        aux.pb({base.pos2d(P[i]), i});
+    }
+    aux = convexHull(aux);
+    if(aux.size() < 3) return {};
+    vector<point3> res;
+    for(int i = 0; i < aux.size(); i++){
+        res.pb(P[aux[i].se]);
+    }
+    return res;
+}
+
+vector<vector<point3>> cutConvexPolyhedro(vector<vector<point3>> & P, plane p){
+    int n = P.size();
+    //if(sidePolyhedroPlane(P, p) > 0) return P;
+    if(n < 4) return {};
+    vector<vector<point3>> ans;
+    vector<point3> at;
+    for(int i = 0; i < n; i++){
+        int s = sideFacePlane(P[i], p);
+        if(s != 0){
+            if(s > 0) ans.pb(P[i]); 
+            if(s == -1) for(int j = 0; j < P[i].size(); j++) if(eq(p.side(P[i][j]), 0)) at.pb(P[i][j]);
+            continue;
+        }
+        int m = P[i].size();
+        vector<point3> res;
+        for(int j = 0; j < m; j++){
+            int l = j + 1; if(l == m) l = 0;
+            if(geq(p.side(P[i][j]), 0)) res.pb(P[i][j]);
+            if(eq(p.side(P[i][j]), 0)) at.pb(P[i][j]);
+            if(intersectSegmentPlaneInfo(P[i][j], P[i][l], p) == 1){
+                auto it = line(P[i][j], P[i][l] - P[i][j]).inter(p);
+                if(it != P[i][j] && it != P[i][l]) res.pb(it);
+                at.pb(it);
+            }
+        }
+        if((int) res.size() > 2) ans.pb(res);
+    }
+    at = createConvexFace(at);
+    if((int) at.size() > 2) ans.pb(at);
+    if((int) ans.size() < 4) return {};
+    return ans;
+}
+
 /*Coming soon...
     ConvexHull in nlogn
     Spherical Geometry
