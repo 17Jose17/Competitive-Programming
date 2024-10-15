@@ -94,6 +94,23 @@ struct line{
 
 point3 zero(0, 0, 0);
 
+struct sphere{
+    point3 c; ld r;
+    sphere(): c(0, 0, 0), r(0){}
+    sphere(point3 c, ld r): c(c), r(r){}
+    
+    point3 posS(const ld & lat, const ld & lon){point3 p(r * cos(lat) * cos(lon), r * cos(lat) * sin(lon), r * sin(lat)); return c + p;}
+    vector<point3> interLine(const line & l){ld t = l.dist(c); ld h1 = r * r - t * t; point3 p = l.proj(c); point3 h = l.q * sqrt(h1) / l.q.length(); return{p - h, p + h};}
+    ld greatDistance(const point3 & a, const point3 & b){return r * (a - c).angle(b - c);}
+    bool validSegment(const point3 & a, const point3 & b){return (a - c).cross(b - c) != zero || ge((a - c).dot(b - c), 0);}
+};
+
+int infoIntersectSphereLine(const sphere & s, const line & l){
+    ld h = s.r * s.r - l.dist(s.c);
+    if(le(h, 0)) return 0;
+    return 1 + ge(h, 0);
+}
+
 int sgn(ld x){
     if(ge(x, 0)) return 1;
     if(le(x, 0)) return -1;
