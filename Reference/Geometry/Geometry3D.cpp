@@ -106,7 +106,7 @@ struct sphere{
 };
 
 int infoIntersectSphereLine(const sphere & s, const line & l){
-    ld h = s.r * s.r - l.dist(s.c);
+    ld h = s.r - l.dist(s.c);
     if(le(h, 0)) return 0;
     return 1 + ge(h, 0);
 }
