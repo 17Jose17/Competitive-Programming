@@ -1,5 +1,5 @@
 /*
-  Problem: https://qoj.ac/contest/442/problem/1196
+  Problem: https://codeforces.com/gym/105053/problem/I
   Explication:
 */
 
