@@ -1,6 +1,6 @@
 /*
-  Problem : https://codeforces.com/gym/103640/problem/A
-  Explication (Spanish) https://hackmd.io/@JoOrI6xWTeCaxNiU83oinw/SJK6Of6rp
+  Problem: https://codeforces.com/gym/103640/problem/A
+  Explication (Spanish): https://hackmd.io/@JoOrI6xWTeCaxNiU83oinw/SJK6Of6rp
 */
 
 #include <bits/stdc++.h>
@@ -134,7 +134,6 @@ int main(){
 	            areaTs.pb(vts[l1]);
 	            }
 	   
-//----------------------------------------------------------------------------------------------------------------
             for(int i = 0; i <= 400; i++) BIT[i] = 0;
 
 	        polarSort(vps, vp[i], vp[j] - vp[i]); polarSort(vps1, vp[i], vp[j] - vp[i]);
@@ -160,9 +159,7 @@ int main(){
 				if(maxx + vps[l1].se < s) continue;
                 res_n1 += query(lx, n + 1);
             }
-              //  cout<<res_n1<<" ";}
-           
-//----------------------------------------------------------------------------------------------------------------
+		    
             for(int i = 0; i <= 400; i++) BIT[i] = 0;
             
             polarSort(vps, vp[j], vp[i] - vp[j]); polarSort(vps1, vp[j], vp[i] - vp[j]);
