@@ -105,6 +105,22 @@ struct sphere{
     bool validSegment(const point3 & a, const point3 & b){return (a - c).cross(b - c) != zero || ge((a - c).dot(b - c), 0);}
 };
 
+struct coords{
+    point3 o, dx, dy, dz;
+
+    coords(point3 p, point3 q, point3 r) : o(p) {
+        dx = (q - p).unit();
+        dz = ((dx).cross(r - p)).unit();
+        dy = dz.cross(dx);
+    }
+
+    coords(point3 p, point3 q, point3 r, point3 s) : 
+     o(p), dx(q - p), dy(r - p), dz(s - p) {}
+    //Return a point in 2D
+    point pos2d(point3 p) {return point((p - o).dot(dx), (p - o).dot(dy));}
+    point3 pos3d(point3 p) {return point3((p - o).dot(dx), (p - o).dot(dy), (p - o).dot(dz));}
+};
+
 int infoIntersectSphereLine(const sphere & s, const line & l){
     ld h = s.r - l.dist(s.c);
     if(le(h, 0)) return 0;
@@ -165,22 +181,6 @@ int intersectSegmentPlaneInfo(const point3 & a, const point3 & b, const plane & 
     }
     return 0;
 }
-
-struct coords{
-    point3 o, dx, dy, dz;
-
-    coords(point3 p, point3 q, point3 r) : o(p) {
-        dx = (q - p).unit();
-        dz = ((dx).cross(r - p)).unit();
-        dy = dz.cross(dx);
-    }
-
-    coords(point3 p, point3 q, point3 r, point3 s) : 
-     o(p), dx(q - p), dy(r - p), dz(s - p) {}
-    //Return a point in 2D
-    point pos2d(point3 p) {return point((p - o).dot(dx), (p - o).dot(dy));}
-    point3 pos3d(point3 p) {return point3((p - o).dot(dx), (p - o).dot(dy), (p - o).dot(dz));}
-};
 
 // lim = 5000, p = 0.1 & pass = 0.995 works okey
 pair<point3, ld> miniumSphereEnclosing(vector<point3> P, const point3 & init, const int & lim, const & ld p, const ld & pass){
