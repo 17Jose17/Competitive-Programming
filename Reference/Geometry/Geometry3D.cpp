@@ -403,9 +403,3 @@ vector<vector<point3>> cutConvexPolyhedro(vector<vector<point3>> & P, plane p){
     if((int) ans.size() < 4) return {};
     return ans;
 }
-
-/*Coming soon...
-    ConvexHull in nlogn
-    Spherical Geometry
-    ¿Half spaces? :O
-*/
