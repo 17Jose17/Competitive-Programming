@@ -57,10 +57,11 @@ struct plane{
     point3 n; ld d;
     plane(): n(0, 0, 0), d(0){}
     plane(point3 n, ld d): n(n), d(d){}
+    plane(point3 n, point3 p): n(n), d(n.dot(p)){}
     plane(point3 p1, point3 p2, point3 p3): plane((p2 - p1).cross(p3 - p1), p1.dot((p2 - p1).cross(p3 - p1))){}
-    
+ 
     ld side(const point3 & p) const{return ((*this).n).dot(p) - (*this).d;}
-    ld dist(const point3 & p) const{return abs((*this).side(p)) / ((*this).n).length();}
+    ld dist(const point3 & p) const{return fabsl((*this).side(p)) / ((*this).n).length();}
     plane translate(const point3 & p) const{return {(*this).n, (*this).d + ((*this).n).dot(p)};}
     plane shift(const ld & t) const{return {(*this).n, (*this).d + t * ((*this).n).length()};}
     point3 proj(const point3 & p) const{return p - (*this).n * (*this).side(p) / ((*this).n).length();}
@@ -68,10 +69,10 @@ struct plane{
     //Minium angle between two planes
     ld anglep(const plane & p) const{return ((*this).n).angle(p.n);}
     //Angle between a plane and line is pi / 2 - angle(between two vector directionals) ans parallel and perpendicular is exactly of plane to plane
-    
+ 
     bool operator|(const plane & p) const{const point3 r = ((*this).n).cross(p.n); return (r.x == 0 && r.y == 0 && r.z == 0);} //Parallel
     bool operator/(const plane & p) const{return ((*this).n).dot(p.n) == 0;} //Perpendicular
-    
+ 
 };
 
 struct line{
