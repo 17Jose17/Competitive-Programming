@@ -60,10 +60,112 @@ struct line{
 	}
 };
 
-ld distancePointSegment(point a, point b, point p){
-    ld res = min((p - a).length(), (p - b).length());
-    if((b - a).cross(p - a) && (b - a).dot(p - a) >= 0 && (a - b).dot(p - b) >= 0) res = min(res, distancePointLine(a, b - a, p));
-    return res;
+int sgn2(ld x) {
+    return x < 0 ? -1 : 1;
+}
+
+struct ln {
+    point p, pq;
+    ln(const point &p, const point &q): p(p), pq(q - p) {}
+    ln() {}
+
+    bool operator/(const ln &l) {
+        return abs(pq.unit().cross(l.pq.unit())) <= eps;
+    }
+    point operator ^ (const ln &l) {
+        if (*this / l)
+            return {Inf, Inf};
+
+        return l.p + l.pq * ((p - l.p).cross(pq) / (l.pq.cross(pq)));
+    }
+};
+
+struct halfplane : public ln {
+    ld angle;
+
+    halfplane() {}
+    halfplane(const point &a, const point &b) {
+        p = a;
+        pq = b - a;
+        angle = atan2(pq.y, pq.x);
+    }
+
+    bool operator < (const halfplane &b) const {
+        return angle < b.angle;
+    }
+    bool out(const point &q) const {
+        return pq.cross(q - p) < -eps;
+    }
+};
+
+vector<point> intersect(vector<halfplane> b) {
+    vector<point> bx = {
+        {Inf, Inf},
+        {-Inf, Inf},
+        {-Inf, -Inf},
+        {Inf, -Inf}
+    };
+
+    forn(i, 4) b.pb(halfplane(bx[i], bx[(i + 1) % 4]));
+
+    sort(all(b));
+
+    int n = b.size(), q = 1, h = 0;
+    vector<halfplane> c(b.size() + 10);
+
+    forn(i, n) {
+        while (q < h && b[i].out(c[h] ^ c[h - 1]))
+            h--;
+
+        while (q < h && b[i].out(c[q] ^ c[q + 1]))
+            q++;
+
+        c[++h] = b[i];
+
+        if (q < h && abs(c[h].pq.cross(c[h - 1].pq)) < eps) {
+            if (c[h].pq.dot(c[h - 1].pq) <= 0)
+                return {};
+
+            h--;
+
+            if (b[i].out(c[h].p))
+                c[h] = b[i];
+        }
+    }
+
+    while (q < h - 1 && c[q].out(c[h] ^ c[h - 1]))
+        h--;
+
+    while (q < h - 1 && c[h].out(c[q] ^ c[q + 1]))
+        q++;
+
+    if (h - q <= 1)
+        return {};
+
+    c[h + 1] = c[q];
+
+    vector<point> s;
+
+    forr(i, q, h) s.pb(c[i] ^ c[i + 1]);
+
+    return s;
+}
+
+ld distancePointSegment(point a, point b, point p) {
+    if ((b - a).dot(p - a) < 0)
+        return (a - p).length();
+    if ((a - b).dot(p - b) < 0)
+        return (b - p).length();
+    return distancePointLine(a, b - a, p);
+}
+ 
+ld distSegments(point p0, point p1, point p2, point p3){
+    ld ans = INF;
+    ans = min(ans, distancePointSegment(p0, p1, p2));
+    ans = min(ans, distancePointSegment(p0, p1, p3));
+    ans = min(ans, distancePointSegment(p2, p3, p0));
+    ans = min(ans, distancePointSegment(p2, p3, p1));
+    return ans;
 }
 
 ld distancePointPolygon(vector<point> P, point p){
@@ -87,4 +189,175 @@ ld distanceConvexPolygons(vector<point> P1, vector<point> P2){
                 res = min(res, distancePointSegment(P[i], P[j], point(0, 0)));
         }
         return res;
+}
+
+vector<point> tangentsPointPolygon(const vector<point> & P, const vector<vector<point>> & Ps, const point & p){
+	int n = P.size(), m = Ps[0].size(), k = Ps[1].size();
+	
+	int lk = m; if(Ps[0][m - 1] == Ps[1][0]) lk--; 
+
+	auto tang = [&](int l, int r, ld w, int kl) -> int {
+		int res = min(l, r);
+	        while(l <= r){
+			int m = (l + r) / 2;
+			ld a = (P[(m + kl) % n] - p).cross(P[(m + 1 + kl) % n] - p) * w, b = (P[(m + kl) % n] - p).cross(P[(m - 1 + n + kl) % n] - p) * w;
+			if(geq(a, 0) && geq(b, 0)) return m;
+			if(geq(a, 0)) r = m - 1, res = m;
+			else l = m + 1;
+	        }
+	        return res;
+    	};
+
+	auto bs = [&](int l, int r, const vector<point> & A, ld w) -> int {
+	        int res = l;
+	        ld w1 = p.x * w;
+	        while(l <= r){
+			int m = (l + r) / 2;
+			if(ge(A[m].x * w, w1)) r = m - 1;
+			else res = m, l = m + 1;
+		}
+	        return res;
+	};
+    
+	point left = p, rigth = p;
+
+	int t1 = bs(0, m - 1, Ps[0], 1), t2 = bs(0, k - 1, Ps[1], -1);
+	
+	auto u1 = tang(0, t1, -1, 0), u2 = tang(0, t2, -1, lk);
+	auto v1 = tang(t1, m - 1, 1, 0), v2 = tang(t2, k - 1, 1, lk);
+	
+	if(leq((P[u1] - p).cross(P[(u1 - 1 + n) % n] - p), 0) && leq((P[u1] - p).cross(P[(u1 + 1) % n] - p), 0)) left = P[u1];
+	if(leq((P[(lk + u2) % n] - p).cross(P[(lk + u2 - 1 + n) % n] - p), 0) && leq((P[(lk + u2) % n] - p).cross(P[(lk + u2 + 1) % n] - p), 0)) left = P[(lk + u2) % n];
+	
+	if(geq((P[v1] - p).cross(P[(v1 - 1 + n) % n] - p), 0) && geq((P[v1] - p).cross(P[(v1 + 1) % n] - p), 0)) rigth = P[v1];
+	if(geq((P[(lk + v2) % n] - p).cross(P[(lk - 1 + n + v2) % n] - p), 0) && geq((P[(lk + v2) % n] - p).cross(P[(lk + 1 + v2) % n] - p), 0)) rigth = P[(lk + v2) % n];
+    
+	return {left, rigth};
+}
+
+vector<vector<point>> trian(vector<point> & P){
+    int n = P.size();
+    vector<int> next(n);
+    for(int i = 0; i < n - 1; i++) next[i] = i + 1;
+    auto is_ear = [&](int i, int j, int k){
+        if(sgn((P[j] - P[i]).cross(P[k] - P[i])) <= 0) return false;
+        for(int l = next[k]; l != i; l = next[l])
+            if(sgn((P[i] - P[l]).cross(P[j] - P[l])) >= 0 &&
+             sgn((P[j] - P[l]).cross(P[k] - P[l])) >= 0 &&
+             sgn((P[k] - P[l]).cross(P[i] - P[l])) >= 0) return false;
+        return true;
+    };
+    vector<vector<point>> res;
+    for(int i = 0; next[next[i]] != i;){
+        if(is_ear(i, next[i], next[next[i]])){
+            res.pb({P[i], P[next[i]], P[next[next[i]]]});
+            next[i] = next[next[i]];
+        }else i = next[i];
+    }
+    return res;
+}
+
+ld segmentCircular(point c, point a, point b){
+    ld r = (c - a).length();
+    point v1 = a - c, v2 = b - c;
+    ld tet = acosl(v1.dot(v2) / v1.length() / v2.length());
+    point rt = v1.rotate(tet);
+    if(!(abs(rt.x - v2.x) <= .5 && abs(rt.y - v2.y) <= .5)) tet = pi * 2 - tet;
+    return (a - c).length() * tet;
+}
+
+struct line{
+    point a, v;
+    line(): a(), v(){}
+    line(const point & a, const point & v): a(a), v(v){}
+};
+
+bool lexCompare(const point & a, const point & b){
+    if(neq(a.x, b.x))
+        return a.x < b.x;
+    return a.y < b.y;
+}
+ 
+char segmentType(line seg, point o){
+    if(eq(seg.a.x, seg.v.x))
+        return 0;
+    if(!lexCompare(seg.a, seg.v))
+        swap(seg.a, seg.v);
+    return (seg.v - seg.a).cross(o - seg.a) > 0 ? 1 : -1;
+}
+
+ld areaUnionTriangles(vector<vector<point>> & P){
+    int n = P.size();
+    vector<line> segments(n * 3); vector<char> segmentsType(n * 3);
+    for(int i = 0; i < n; i++){
+        point a = P[i][0], b = P[i][1], c = P[i][2];
+        segments[i * 3] = lexCompare(a, b) ? line(a, b) : line(b, a);
+        segmentsType[i * 3] = segmentType(segments[i * 3], c);
+        segments[i * 3 + 1] = lexCompare(b, c) ? line(b, c) : line(c, b);
+        segmentsType[i * 3 + 1] = segmentType(segments[i * 3 + 1], a);
+        segments[i * 3 + 2] = lexCompare(c, a) ? line(c, a) : line(a, c);
+        segmentsType[i * 3 + 2] = segmentType(segments[i * 3 + 2], b);
+    }
+    vector<ld> k(n * 3), t(n * 3);
+    for(int i = 0; i < n * 3; i++){
+        if(segmentsType[i]){
+            k[i] = (segments[i].v.y - segments[i].a.y) / (segments[i].v.x - segments[i].a.x);
+            t[i] = segments[i].a.y - k[i] * segments[i].a.x;
+        }
+    }
+    ld ans = 0;
+    for(int i = 0; i < n * 3; i++){
+        if(!segmentsType[i]) continue;
+        ld l = segments[i].a.x, r = segments[i].v.x;
+        vector<pair<ld, int>> evs;
+        for(int j = 0; j < n * 3; j++){
+            if(!segmentsType[i] || i == j) continue;
+            ld l1 = segments[j].a.x, r1 = segments[j].v.x;
+            if(geq(l1, r) || geq(l, r1)) continue;
+            ld coml = max(l, l1), comr = min(r, r1);
+            auto f = intersectSegmentsInfo(segments[i].a, segments[i].v, segments[j].a, segments[j].v);
+            if(f == 0){
+                ld yl1 = k[j] * coml + t[j], yl = k[i] * coml + t[i];
+                if(le(yl1, yl) == (segmentsType[i] == 1)){
+                    int evTy = -segmentsType[i] * segmentsType[j];
+                    evs.emplace_back(coml, evTy);
+                    evs.emplace_back(comr, -evTy);
+                }
+            }else if(f == 1){
+                auto u = intersectLines(segments[i].a, segments[i].v - segments[i].a, segments[j].a, segments[j].v - segments[j].a);
+                ld yl = k[i] * coml + t[i], yl1 = k[j] * coml + t[j];
+                int evTy = -segmentsType[i] * segmentsType[j];
+                if(le(yl1, yl) == (segmentsType[i] == 1)){
+                    evs.emplace_back(coml, evTy);
+                    evs.emplace_back(u.x, -evTy);
+                }
+                yl = k[i] * comr + t[i], yl1 = k[j] * comr + t[j];
+                if(le(yl1, yl) == (segmentsType[i] == 1)){
+                    evs.emplace_back(u.x, evTy);
+                    evs.emplace_back(comr, -evTy);
+                }
+            }else{
+                if(segmentsType[i] != segmentsType[j] || j > i){
+                    evs.emplace_back(coml, -2);
+                    evs.emplace_back(comr, 2);
+                }
+            }
+        }
+        evs.emplace_back(l, 0);
+        sort(all(evs));
+        int j = 0, balance = 0;
+        while(j < evs.size()){
+            int ptr = j;
+            while(ptr < evs.size() && eq(evs[j].fi, evs[ptr].fi)){
+                balance += evs[ptr].se;
+                ptr++;
+            }
+            if(!balance && !eq(evs[j].fi, r)){
+                ld nextx = ptr == (int)evs.size() ? r : evs[ptr].fi;
+                ans -= segmentsType[i] * (k[i] * (nextx + evs[j].fi) + 2 * t[i]) * (nextx - evs[j].fi);
+            }
+            j = ptr;
+        }
+    }
+    return ans / 2;
 }
